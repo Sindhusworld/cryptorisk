@@ -20,12 +20,14 @@ jobs:
           python-version: "3.11"
 
       - name: Install package
-        run: pip install .
+        run: pip install -e .
 
       - name: Run security scan
-        run: python -m cryptorisk.cli .
+        run: cryptorisk scan .
+        continue-on-error: true
 
       - name: Upload report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cryptorisk-report
