@@ -1,53 +1,77 @@
 import os
-from cryptorisk.secrets import scan_secrets
+import re
+import json
+from datetime import datetime
+
+RULES = [
+    (r"(?i)md5\s*\(", "HIGH", "MD5 usage detected"),
+    (r"(?i)sha1\s*\(", "MEDIUM", "SHA1 usage detected"),
+    (r"(?i)password\s*=", "HIGH", "Hardcoded password detected"),
+    (r"(?i)api[_-]?key\s*=", "HIGH", "Hardcoded API key detected"),
+]
 
 
-# ----------------------------
-# SCAN SINGLE FILE
-# ----------------------------
-def scan_file(file_path):
-    results = []
+def scan_file(path):
+    risks = []
 
     try:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
 
-        for i, line in enumerate(lines, start=1):
-
-            # --- MD5 check ---
-            if "md5" in line.lower():
-                results.append(("HIGH", i, "MD5 usage detected"))
-
-            # --- SHA1 check ---
-            if "sha1" in line.lower():
-                results.append(("MEDIUM", i, "SHA1 usage detected"))
-
-            # --- SECRET SCANNER (NEW) ---
-            results.extend(scan_secrets(line, i))
+            for pattern, level, message in RULES:
+                if re.search(pattern, content):
+                    risks.append([level, message])
 
     except Exception as e:
-        results.append(("ERROR", 0, str(e)))
+        risks.append(["ERROR", str(e)])
+
+    return risks
+
+
+def scan_directory(base_path):
+    results = []
+
+    for root, _, files in os.walk(base_path):
+        for file in files:
+            if file.endswith(".py"):
+                full_path = os.path.join(root, file)
+
+                results.append({
+                    "file": full_path,
+                    "risks": scan_file(full_path)
+                })
 
     return results
 
 
-# ----------------------------
-# SCAN FOLDER
-# ----------------------------
-def scan_folder(path):
-    results = []
+def generate_report(results):
     summary = {"HIGH": 0, "MEDIUM": 0, "INFO": 0, "ERROR": 0}
 
-    for root, _, files in os.walk(path):
-        for file in files:
-            if file.endswith(".py"):
-                file_path = os.path.join(root, file)
-                file_results = scan_file(file_path)
+    for f in results:
+        for r in f["risks"]:
+            if r[0] in summary:
+                summary[r[0]] += 1
 
-                results.append((file_path, file_results))
+    return {
+        "timestamp": datetime.utcnow().isoformat(),
+        "summary": summary,
+        "files": results
+    }
 
-                for level, _, _ in file_results:
-                    if level in summary:
-                        summary[level] += 1
 
-    return results, summary
+def run_scan(path):
+    results = scan_directory(path)
+    report = generate_report(results)
+
+    with open("report.json", "w") as f:
+        json.dump(report, f, indent=2)
+
+    print("Scan complete")
+    print(json.dumps(report["summary"], indent=2))
+
+    # CI FAIL RULE
+    if report["summary"]["HIGH"] > 0:
+        print("❌ HIGH risk detected")
+        exit(1)
+
+    return report

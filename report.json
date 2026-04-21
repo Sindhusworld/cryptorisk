@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-04-21T05:48:19.265674",
+  "summary": {
+    "HIGH": 1,
+    "MEDIUM": 1,
+    "INFO": 0,
+    "ERROR": 0
+  },
+  "files": [
+    {
+      "file": ".\\run.py",
+      "risks": []
+    },
+    {
+      "file": ".\\setup.py",
+      "risks": []
+    },
+    {
+      "file": ".\\test.py",
+      "risks": [
+        [
+          "HIGH",
+          "MD5 usage detected"
+        ],
+        [
+          "MEDIUM",
+          "SHA1 usage detected"
+        ]
+      ]
+    },
+    {
+      "file": ".\\__init__.py",
+      "risks": []
+    },
+    {
+      "file": ".\\cryptorisk\\cli.py",
+      "risks": []
+    },
+    {
+      "file": ".\\cryptorisk\\report.py",
+      "risks": []
+    },
+    {
+      "file": ".\\cryptorisk\\scanner.py",
+      "risks": []
+    },
+    {
+      "file": ".\\cryptorisk\\secrets.py",
+      "risks": []
+    },
+    {
+      "file": ".\\cryptorisk\\__init__.py",
+      "risks": []
+    }
+  ]
+}
